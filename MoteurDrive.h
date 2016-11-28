@@ -32,7 +32,7 @@ private:
     int m_cstTime = 4000; //One step each mS
 
     /*
-    TODO :  1. Add some limits for the start and the end of the motor input range
+    TODO :  
             2. Add a non-linear acceleration curve whit n points on an array
             3. Add different time for acceleration and deceleration
     */
@@ -42,12 +42,14 @@ public:
     //Speed need to be a PWM pin & Direction stand for 0 = clockwise anything else = anti-clockwise  ***See next fonction***
     Moteur(int pin1, int pin2, bool mode = 0);
     Moteur(int pin1, int pin2, int time, bool mode = 0);
+    Moteur(int pin1, int pin2, int max, int min, int time, bool mode = 0);
 
     void setSpeed(int vitesse, bool acc = false);
     void setMaxSpeed(int speed);
     void setMinSpeed(int speed);
 
     void doDyn();
+    int m_map(int vitesse); //Transform % to PWM value on the motor range
 
     //Acces and setting
     int getSpeed();

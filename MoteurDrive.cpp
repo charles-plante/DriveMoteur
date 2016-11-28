@@ -3,6 +3,7 @@
 * Ecrit le 23 Novenvre 2026
 * Charles Plante-Veillette
 * Version 1
+* For this code to work you must prohibit delay() fct anywhere or the dynamic will glitch
 */
 
 #include "MoteurDrive.h"
@@ -31,6 +32,18 @@ Moteur::Moteur(int pin1, int pin2, int time, bool mode)
     m_cstTime = time;
     m_oneWireMode = mode;
 }
+Moteur::Moteur(int pin1, int pin2, int max, int min, int time, bool mode)
+{
+    m_pin1 = pin1;
+    m_pin2 = pin2;
+    pinMode(m_pin1, OUTPUT);
+    pinMode(m_pin2, OUTPUT);
+
+    m_cstTime = time;
+    m_oneWireMode = mode;
+    m_minSpeed = min;
+    m_maxSpeed = max;
+}
 void Moteur::setSpeed(int vitesse, bool acc)
 {
     m_acc = acc;
@@ -42,12 +55,12 @@ void Moteur::setSpeed(int vitesse, bool acc)
         {
             if(m_speed > 0)//Front rotation
             {
-                analogWrite(m_pin1, m_speed);
+                analogWrite(m_pin1, m_map(m_speed));
                 digitalWrite(m_pin2, HIGH);//Subject to change
             }
             else if(m_speed < 0)//Back rotation
             {
-                analogWrite(m_pin1, abs(m_speed));
+                analogWrite(m_pin1, m_map(m_speed));
                 digitalWrite(m_pin2, LOW);//Subject to change
             }
             else    //Stop the motor
@@ -90,25 +103,17 @@ void Moteur::doDyn()
     if((!m_acc) || (micros() < m_accTimer) || (m_currentSpeed == m_speed))
         return;
 
-    /* DEBUG STRING
-    if(m_pin1 == 10)//Signal motor A => pin 10
-    {
-        Serial.print("A : "); Serial.print(m_currentSpeed);Serial.print(" -> ");Serial.println(m_speed);
-    }
-    else
-        Serial.print("B : "); Serial.print(m_currentSpeed);Serial.print(" -> ");Serial.println(m_speed);
-    //*/
-
     //Increase of decrease the speed toward goal
     if(m_currentSpeed < m_speed)
         m_currentSpeed++;
+
     else if(m_currentSpeed > m_speed)
         m_currentSpeed--;
 
     //Check wich mode is used and send change PWM to the pin
     if(m_oneWireMode)
     {
-        analogWrite(m_pin1, abs(m_currentSpeed));
+        analogWrite(m_pin1, m_map(m_currentSpeed));
         if(m_currentSpeed > 0)
             digitalWrite(m_pin2, HIGH);
         else
@@ -118,13 +123,13 @@ void Moteur::doDyn()
     {
         if(m_currentSpeed > 0)
         {
-            analogWrite(m_pin1, m_currentSpeed);
+            analogWrite(m_pin1, m_map(m_currentSpeed));
             digitalWrite(m_pin2, LOW);
         }
         else if(m_currentSpeed < 0)
         {
             digitalWrite(m_pin1, LOW);
-            analogWrite(m_pin2, abs(m_currentSpeed));
+            analogWrite(m_pin2, m_map(m_currentSpeed));
         }
         else
         {
@@ -139,3 +144,14 @@ int Moteur::getSpeed()              {   return m_currentSpeed;}
 void Moteur::setMaxSpeed(int speed) {   m_maxSpeed = speed;}
 void Moteur::setMinSpeed(int speed) {   m_minSpeed = speed;}
 void Moteur::setTimeCst(int time)   {   m_cstTime = time;}
+
+int Moteur::m_map(int vitesse)
+{
+    /* This function convert a % value to the range of the motor */
+    if(vitesse == 0)
+        return 0;
+    else if(vitesse > 0)
+        return  map(vitesse, 1, 100, m_minSpeed, m_maxSpeed);
+    else
+        return map(vitesse, -1, -100, m_minSpeed, m_maxSpeed);
+}
